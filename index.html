@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DNA / RNA Converter — HG Lab</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:Tahoma,sans-serif;background:#f5f6f8;color:#222;display:flex;flex-direction:column;height:100vh}
+
+    header{display:flex;align-items:center;gap:12px;padding:10px 20px;background:#fff;border-bottom:1px solid #e0e0e0;flex-shrink:0}
+    header img{width:48px;height:48px;border-radius:8px}
+    .header-text h1{font-size:17px;font-weight:700;color:#1a3a5c;line-height:1.2}
+    .header-text a.small-link{font-size:10px;color:#1a6fbf;text-decoration:none;display:block;margin-top:2px}
+    .header-text a.small-link:hover{text-decoration:underline}
+
+    .top{display:grid;grid-template-columns:1fr 1fr;flex:0 0 70%;overflow:hidden}
+    .panel{padding:14px 18px;display:flex;flex-direction:column;gap:8px;overflow:hidden;background:#fff}
+    .panel-left{border-right:1px solid #e8e8e8;background:#fafbfc}
+
+    label{font-size:10px;color:#999;letter-spacing:0.4px;text-transform:uppercase;flex-shrink:0}
+    textarea{flex:1;width:100%;padding:10px 12px;font-family:Tahoma,sans-serif;font-size:12px;border:1px solid #dde0e5;border-radius:6px;background:#fff;color:#222;resize:none;line-height:1.7;letter-spacing:0.3px}
+    textarea:focus{outline:none;border-color:#4a90d9;box-shadow:0 0 0 2px #e8f2fc}
+    textarea::placeholder{color:#bbb}
+    .char-count{font-size:10px;color:#bbb;text-align:right;flex-shrink:0}
+
+    .ops-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;flex-shrink:0}
+    .op-btn{padding:7px 6px;font-size:10px;border:1px solid #dde0e5;border-radius:6px;background:#fff;color:#555;cursor:pointer;text-align:center;transition:all 0.15s;font-family:Tahoma,sans-serif;line-height:1.3}
+    .op-btn:hover{border-color:#4a90d9;color:#1a6fbf;background:#f0f7ff}
+    .op-btn.active{border-color:#4a90d9;color:#1a6fbf;background:#e8e8fc;font-weight:700}
+
+    .error{color:#c0392b;font-size:11px;padding:6px 10px;background:#fdf0ef;border-radius:5px;border:1px solid #f5c6c2;display:none;flex-shrink:0}
+
+    .result-placeholder{flex:1;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:12px;border:1px dashed #dde0e5;border-radius:6px;background:#fafbfc}
+    .result-area{display:none;flex:1;flex-direction:column;gap:7px;overflow:hidden}
+    .result-area.visible{display:flex}
+    .result-label-row{display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .result-label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.4px}
+    .copy-hint{font-size:9px;color:#bbb;font-style:italic}
+
+    .result-seq{flex:1;font-family:Tahoma,monospace;font-size:12px;word-break:break-all;line-height:1.8;letter-spacing:0.3px;overflow-y:auto;padding:10px 12px;background:#fafbfc;border:1px solid #e8e8e8;border-radius:6px;cursor:pointer;transition:background 0.15s,border-color 0.15s;position:relative}
+    .result-seq:hover{background:#f0f7ff;border-color:#4a90d9}
+    .result-seq.copied{background:#f0faf4;border-color:#27a05a}
+    .result-seq .A{color:#e07b20}.result-seq .T{color:#2a7bd4}.result-seq .U{color:#27a05a}.result-seq .G{color:#c49a00}.result-seq .C{color:#b0347a}
+
+    .copied-toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#27a05a;color:#fff;font-size:11px;padding:4px 14px;border-radius:20px;pointer-events:none;opacity:0;transition:opacity 0.2s;font-family:Tahoma,sans-serif;white-space:nowrap}
+    .result-seq-wrap{position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+    .stats-row{display:flex;gap:5px;flex-shrink:0}
+    .stat{flex:1;background:#f5f6f8;border-radius:5px;padding:6px 4px;text-align:center;border:1px solid #e8e8e8}
+    .stat-val{font-size:15px;font-weight:700;display:block}
+    .stat-lbl{font-size:9px;color:#aaa;display:block;text-transform:uppercase}
+
+    .gc-bar{height:4px;border-radius:2px;background:#e8e8e8;overflow:hidden;flex-shrink:0}
+    .gc-fill{height:100%;background:#27a05a;border-radius:2px;transition:width 0.4s ease}
+    .gc-label{font-size:10px;color:#aaa;flex-shrink:0}
+
+    .result-actions{display:flex;gap:6px;flex-shrink:0}
+    .act-btn{font-size:10px;padding:5px 12px;border:1px solid #dde0e5;border-radius:5px;background:#fff;color:#777;cursor:pointer;transition:all 0.15s;font-family:Tahoma,sans-serif}
+    .act-btn:hover{border-color:#4a90d9;color:#1a6fbf;background:#f0f7ff}
+
+    .legend{display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap}
+    .leg{display:flex;align-items:center;gap:3px;font-size:10px;color:#aaa}
+    .leg-dot{width:6px;height:6px;border-radius:50%}
+
+    .bottom{flex:0 0 30%;border-top:1px solid #e0e0e0;background:#fff;padding:12px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+    .bottom-title{font-size:11px;font-weight:700;color:#1a3a5c;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid #e8e8e8;padding-bottom:6px}
+    .info-list{display:flex;flex-direction:column;gap:6px}
+    .info-item{font-size:12px;color:#555;display:flex;align-items:baseline;gap:6px}
+    .info-item span.bullet{color:#999;font-size:11px;flex-shrink:0}
+    .info-item a{color:#1a6fbf;text-decoration:none}
+    .info-item a:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="https://hgltools.vercel.app/" aria-label="HG Tools homepage">
+      <img src="logo.png" alt="HG Lab logo">
+    </a>
+    <div class="header-text">
+      <h1>DNA / RNA Converter — HG Lab</h1>
+      <a class="small-link" href="https://hgltools.vercel.app/">hgltools.vercel.app</a>
+    </div>
+  </header>
+
+  <main class="top">
+    <div class="panel panel-left">
+      <label>Input sequence (DNA or RNA)</label>
+      <textarea id="inputSeq" placeholder="Paste sequence here...\nExample: ATGCGATCGATCG" oninput="onInput()" spellcheck="false"></textarea>
+      <div class="char-count" id="charCount">0 bp</div>
+
+      <div class="legend">
+        <span class="leg"><span class="leg-dot" style="background:#e07b20"></span>Adenine (A)</span>
+        <span class="leg"><span class="leg-dot" style="background:#2a7bd4"></span>Thymine (T)</span>
+        <span class="leg"><span class="leg-dot" style="background:#27a05a"></span>Uracil (U)</span>
+        <span class="leg"><span class="leg-dot" style="background:#c49a00"></span>Guanine (G)</span>
+        <span class="leg"><span class="leg-dot" style="background:#b0347a"></span>Cytosine (C)</span>
+      </div>
+
+      <div class="ops-grid">
+        <button class="op-btn" onclick="runOp('dna2rna',this)"><span class="op-icon">→</span><span class="op-label">DNA→RNA</span><span class="op-desc">T→U</span></button>
+        <button class="op-btn" onclick="runOp('rna2dna',this)"><span class="op-icon">←</span><span class="op-label">RNA→DNA</span><span class="op-desc">U→T</span></button>
+        <button class="op-btn" onclick="runOp('complement',this)"><span class="op-icon">⇌</span><span class="op-label">Complement</span><span class="op-desc">A↔T/U</span></button>
+        <button class="op-btn" onclick="runOp('reverse',this)"><span class="op-icon">↩</span><span class="op-label">Reverse</span><span class="op-desc">5'→3'</span></button>
+        <button class="op-btn" onclick="runOp('revcomp',this)"><span class="op-icon">⇔</span><span class="op-label">Rev.Comp</span><span class="op-desc">Rev+Comp</span></button>
+        <button class="op-btn" onclick="runOp('antisense',this)"><span class="op-icon">⊖</span><span class="op-label">Antisense</span><span class="op-desc">3'→5'</span></button>
+      </div>
+
+      <div id="error" class="error"></div>
+    </div>
+
+    <div class="panel">
+      <div class="result-placeholder" id="placeholder">← Chọn một thao tác</div>
+      <div class="result-area" id="resultArea">
+        <div class="result-label-row">
+          <span class="result-label" id="resultLabel">Result</span>
+          <span class="copy-hint">Click vào chuỗi để copy</span>
+        </div>
+        <div class="result-seq-wrap">
+          <div class="result-seq" id="resultSeq" onclick="clickCopy(this)" title="Click để copy chuỗi"></div>
+          <div class="copied-toast" id="copiedToast">✓ Đã copy!</div>
+        </div>
+        <div class="stats-row" id="statsGrid"></div>
+        <div class="gc-bar"><div class="gc-fill" id="gcFill" style="width:0%"></div></div>
+        <div class="gc-label" id="gcLabel"></div>
+        <div class="result-actions">
+          <button class="act-btn" onclick="copyResult()">Copy</button>
+          <button class="act-btn" onclick="useAsInput()">Dùng làm input</button>
+          <button class="act-btn" onclick="clearAll()">Xoá</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bottom">
+    <div class="bottom-title">More information</div>
+    <div class="info-list">
+      <div class="info-item">
+        <span class="bullet">•</span>
+        <span>Other bio-tools: <a href="https://hglab.hcmus.edu.vn/tools" target="_blank">https://hglab.hcmus.edu.vn/tools</a></span>
+      </div>
+      <div class="info-item">
+        <span class="bullet">•</span>
+        <span>Contact: <a href="https://hglab.hcmus.edu.vn" target="_blank">https://hglab.hcmus.edu.vn</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    let lastResult='';
+    const OPS={dna2rna:'DNA → RNA (Transcription)',rna2dna:'RNA → DNA (Reverse Transcription)',complement:'Complementary Strand',reverse:'Reversed Sequence',revcomp:'Reverse Complement',antisense:'Antisense Strand'};
+    function clean(s){return s.toUpperCase().replace(/\s/g,'');}
+    function isRNA(s){return s.includes('U');}
+    function complement(seq){return seq.split('').map(b=>{if(b==='A')return isRNA(seq)?'U':'T';if(b==='T'||b==='U')return 'A';if(b==='G')return 'C';if(b==='C')return 'G';return b;}).join('');}
+    function validate(seq){const inv=seq.replace(/[ATUGCN]/g,'');if(inv.length)return 'Invalid characters: '+[...new Set(inv)].join(', ');if(seq.includes('T')&&seq.includes('U'))return 'Cannot mix T (DNA) and U (RNA)';return null;}
+    function colorize(seq){return seq.split('').map(b=>'ATUGC'.includes(b)?`<span class="${b}">${b}</span>`:b).join('');}
+    function onInput(){const seq=clean(document.getElementById('inputSeq').value);document.getElementById('charCount').textContent=seq.length+' bp';document.getElementById('error').style.display='none';}
+
+    function clickCopy(el){navigator.clipboard.writeText(lastResult).catch(()=>{});el.classList.add('copied');const toast=document.getElementById('copiedToast');toast.style.opacity='1';setTimeout(()=>{toast.style.opacity='0';el.classList.remove('copied');},1200);}
+
+    function runOp(op,btn){document.querySelectorAll('.op-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const seq=clean(document.getElementById('inputSeq').value);if(!seq){showError('Vui lòng nhập chuỗi trước.');return;}const err=validate(seq);if(err){showError(err);return;}document.getElementById('error').style.display='none';let result='';if(op==='dna2rna')result=seq.replace(/T/g,'U');else if(op==='rna2dna')result=seq.replace(/U/g,'T');else if(op==='complement')result=complement(seq);else if(op==='reverse')result=seq.split('').reverse().join('');else if(op==='revcomp')result=complement(seq).split('').reverse().join('');else if(op==='antisense')result=complement(seq).split('').reverse().join('');lastResult=result;document.getElementById('resultLabel').textContent=OPS[op];document.getElementById('resultSeq').innerHTML=colorize(result);const counts={A:0,T:0,U:0,G:0,C:0};for(const b of result)if(counts[b]!==undefined)counts[b]++;const total=result.length;const hasU=result.includes('U');const gc=counts.G+counts.C;const gcPct=total?Math.round(gc/total*100):0;const bases=hasU?[['A',counts.A,'A-stat'],['U',counts.U,'U-stat'],['G',counts.G,'G-stat'],['C',counts.C,'C-stat']]:[['A',counts.A,'A-stat'],['T',counts.T,'T-stat'],['G',counts.G,'G-stat'],['C',counts.C,'C-stat']];document.getElementById('statsGrid').innerHTML=bases.map(([b,n,c])=>`<div class="stat"><span class="stat-val ${c}">${n}</span><span class="stat-lbl">${b}</span></div>`).join('');document.getElementById('gcFill').style.width=gcPct+'%';document.getElementById('gcLabel').textContent=`GC content: ${gcPct}% (${gc}/${total} bases)`;document.getElementById('placeholder').style.display='none';document.getElementById('resultArea').classList.add('visible');}
+
+    function showError(msg){const el=document.getElementById('error');el.textContent=msg;el.style.display='block';}
+    function copyResult(){navigator.clipboard.writeText(lastResult).catch(()=>{});const btn=event.currentTarget;const orig=btn.textContent;btn.textContent='✓ Đã copy!';setTimeout(()=>btn.textContent=orig,1500);}
+    function useAsInput(){document.getElementById('inputSeq').value=lastResult;document.getElementById('charCount').textContent=lastResult.length+' bp';document.getElementById('resultArea').classList.remove('visible');document.getElementById('placeholder').style.display='flex';document.querySelectorAll('.op-btn').forEach(b=>b.classList.remove('active'));}
+    function clearAll(){document.getElementById('inputSeq').value='';document.getElementById('charCount').textContent='0 bp';document.getElementById('resultArea').classList.remove('visible');document.getElementById('placeholder').style.display='flex';document.querySelectorAll('.op-btn').forEach(b=>b.classList.remove('active'));document.getElementById('error').style.display='none';}
+  </script>
+</body>
+</html>
